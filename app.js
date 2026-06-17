@@ -453,10 +453,17 @@ noteList.addEventListener("click", function(e) {
     e.stopPropagation();
     var id = pin.dataset.pin;
     var idx = notes.findIndex(function(x) { return x.id === id; });
-    if (idx > 0) {
-      var note = notes.splice(idx, 1)[0];
-      note.updatedAt = Date.now();
-      notes.unshift(note);
+    var note = notes.splice(idx, 1)[0];
+    if (note) {
+      if (idx > 0) {
+        // 置顶：移到列表最前面
+        note.updatedAt = Date.now();
+        notes.unshift(note);
+      } else {
+        // 取消置顶：移到列表末尾
+        note.updatedAt = Date.now();
+        notes.push(note);
+      }
       saveCache();
       renderAll();
       saveToGist();
