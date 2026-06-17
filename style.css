@@ -171,9 +171,18 @@ body{
   background:transparent;color:var(--text-secondary);
   border:none;border-radius:4px;font-size:13px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  opacity:1;transition:opacity .15s;z-index:1;padding:0
+  opacity:0;transition:opacity .15s;z-index:1;padding:0;
+  pointer-events:none
 }
-.pin-btn:hover{opacity:1;color:var(--accent)}
+.note-item:hover .pin-btn{
+  opacity:1;
+  pointer-events:auto
+}
+.pin-btn.pinned{
+  opacity:1;
+  pointer-events:auto
+}
+.pin-btn:hover{color:var(--accent)}
 
 .drop-indicator{height:2px;background:var(--accent);border-radius:1px;margin:0 8px;pointer-events:none;display:none}
 

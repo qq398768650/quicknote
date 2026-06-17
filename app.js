@@ -370,7 +370,8 @@ function renderNoteList() {
     var cls = n.id === activeId ? " active" : "";
     var pinIcon = pinnedFlag ? "&#x1F4CD;" : "&#x1F4CC;";
     var pinTitle = pinnedFlag ? "取消置顶" : "置顶";
-    return "<div class=\"note-item" + cls + "\" data-id=\"" + n.id + "\" draggable=\"" + (!pinnedFlag) + "\"><button class=\"pin-btn\" data-pin=\"" + n.id + "\" title=\"" + pinTitle + "\">" + pinIcon + "</button><div class=\"note-item-title\">" + escapeHtml(n.title||"无标题") + "</div><div class=\"note-item-preview\">" + (p||"空白") + "</div><div class=\"note-item-meta\"><span>" + ds + "</span><div class=\"note-item-tags\">" + th + "</div></div></div>";
+    var pinCls = pinnedFlag ? " pin-btn pinned" : " pin-btn";
+    return "<div class=\"note-item" + cls + "\" data-id=\"" + n.id + "\" draggable=\"" + (!pinnedFlag) + "\"><button class=\"" + pinCls + "\" data-pin=\"" + n.id + "\" title=\"" + pinTitle + "\">" + pinIcon + "</button><div class=\"note-item-title\">" + escapeHtml(n.title||"无标题") + "</div><div class=\"note-item-preview\">" + (p||"空白") + "</div><div class=\"note-item-meta\"><span>" + ds + "</span><div class=\"note-item-tags\">" + th + "</div></div></div>";
   }
   var html = "";
   if (pinned.length > 0) {
