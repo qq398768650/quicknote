@@ -159,30 +159,25 @@ body{
 .note-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
 .note-item{
-  position:relative;padding:12px 12px 12px 14px;
+  display:flex;align-items:flex-start;gap:4px;
+  padding:12px 12px 12px 14px;
   border-radius:var(--radius);
   cursor:pointer;transition:background var(--transition);
   margin-bottom:2px
 }
 .note-item.dragging{opacity:.4}
 .pin-btn{
-  position:absolute;top:6px;right:8px;
-  width:22px;height:22px;
+  width:22px;height:22px;margin-top:1px;
   background:transparent;color:var(--text-secondary);
   border:none;border-radius:4px;font-size:13px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  opacity:0;transition:opacity .15s;z-index:1;padding:0;
-  pointer-events:none
+  flex-shrink:0;padding:0;
+  opacity:0;pointer-events:none
 }
-.note-item:hover .pin-btn{
-  opacity:1;
-  pointer-events:auto
-}
-.pin-btn.pinned{
-  opacity:1;
-  pointer-events:auto
-}
+.note-item:hover .pin-btn{opacity:1;pointer-events:auto}
+.pin-btn.pinned{opacity:1;pointer-events:auto}
 .pin-btn:hover{color:var(--accent)}
+.note-item-body{flex:1;min-width:0}
 
 .drop-indicator{height:2px;background:var(--accent);border-radius:1px;margin:0 8px;pointer-events:none;display:none}
 
@@ -405,7 +400,7 @@ kbd{background:var(--tag-bg);padding:2px 7px;border-radius:4px;font-size:11px;fo
     transition:all var(--transition)
   }
   .mobile-tag-add:hover{border-color:var(--accent);color:var(--accent)}
-  .pin-btn{opacity:1}
+  .pin-btn{visibility:visible;opacity:1;pointer-events:auto}
   #note-content,.preview-content{padding:12px 14px;font-size:15px}
   .editor-footer{padding:6px 14px}
   .empty-icon{font-size:48px;margin-bottom:12px}
