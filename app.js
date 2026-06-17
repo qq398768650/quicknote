@@ -666,7 +666,7 @@ async function uploadToRepo(file, noteId) {
     message: "QuickNote attach: " + file.name,
     content: base64
   });
-  const url = "https://raw.githubusercontent.com/" + parts[0] + "/" + parts[1] + "/main/" + encodeURIComponent(path).replace(/%2F/g, "/");
+  const url = "https://raw.githubusercontent.com/" + parts[0] + "/" + parts[1] + "/master/" + encodeURIComponent(path).replace(/%2F/g, "/");
   return { id: genId(), name: file.name, path: path, size: file.size, type: file.type, url: url };
 }
 
