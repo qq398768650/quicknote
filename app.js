@@ -353,7 +353,7 @@ function getFiltered() {
   return f.sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0));
 }
 
-function isPinned(n) { return notes.length > 0 && notes[0].id === n.id; }
+function isPinned(n) { return n.pinned === true; }
 
 function renderNoteList() {
   const f = getFiltered();
@@ -429,7 +429,7 @@ function openNote(id) {
 }
 
 async function createNote() {
-  const n = { id: genId(), title: "", content: "", tags: [], attachments: [], createdAt: Date.now(), updatedAt: Date.now() };
+  const n = { id: genId(), title: "", content: "", tags: [], attachments: [], createdAt: Date.now(), updatedAt: Date.now(), pinned: false };
   notes.unshift(n); saveCache();
   if (isMobile()) hideSidebar();
   openNote(n.id); renderAll(); noteTitle.focus();
@@ -468,18 +468,10 @@ noteList.addEventListener("click", function(e) {
   if (pin) {
     e.stopPropagation();
     var id = pin.dataset.pin;
-    var idx = notes.findIndex(function(x) { return x.id === id; });
-    var note = notes.splice(idx, 1)[0];
+    var note = notes.find(function(x) { return x.id === id; });
     if (note) {
-      if (idx > 0) {
-        // 置顶：移到列表最前面
-        note.updatedAt = Date.now();
-        notes.unshift(note);
-      } else {
-        // 取消置顶：移到列表末尾
-        note.updatedAt = Date.now();
-        notes.push(note);
-      }
+      note.pinned = !note.pinned;
+      note.updatedAt = Date.now();
       saveCache();
       renderAll();
       saveToGist();
@@ -947,7 +939,7 @@ document.getElementById("image-preview-modal").addEventListener("click", functio
   }
 
   async function createNoteFromFile(title, content, ext) {
-    var n = { id: genId(), title: title, content: content, tags: [], attachments: [], createdAt: Date.now(), updatedAt: Date.now() };
+    var n = { id: genId(), title: title, content: content, tags: [], attachments: [], createdAt: Date.now(), updatedAt: Date.now(), pinned: false };
     notes.unshift(n);
     saveCache();
     openNote(n.id);

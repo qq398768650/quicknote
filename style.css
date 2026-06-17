@@ -16,6 +16,7 @@
   --tag-text:#424245;
   --note-hover:#f5f5fa;
   --note-active:#e8f2ff;
+  --pinned-bg:#fff7e6;
   --radius:10px;
   --radius-sm:6px;
   --radius-lg:14px;
@@ -41,6 +42,7 @@
   --tag-text:#d1d1d6;
   --note-hover:#3a3a3c;
   --note-active:#1a3a5c;
+  --pinned-bg:#3a3520;
   --shadow-sm:0 1px 3px rgba(0,0,0,0.2);
   --shadow-md:0 4px 12px rgba(0,0,0,0.25);
   --shadow-lg:0 8px 24px rgba(0,0,0,0.3);
@@ -169,15 +171,15 @@ body{
   background:transparent;color:var(--text-secondary);
   border:none;border-radius:4px;font-size:13px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  opacity:0;transition:opacity .15s;z-index:1;padding:0
+  opacity:1;transition:opacity .15s;z-index:1;padding:0
 }
-.note-item:hover .pin-btn{opacity:.6}
-.pin-btn:hover{opacity:1!important;color:var(--accent)}
+.pin-btn:hover{opacity:1;color:var(--accent)}
 
 .drop-indicator{height:2px;background:var(--accent);border-radius:1px;margin:0 8px;pointer-events:none;display:none}
 
 /* ===== Pinned section ===== */
 .pinned-section{position:sticky;top:0;background:var(--sidebar-bg);z-index:2}
+.pinned-section .note-item{background:var(--pinned-bg);border-radius:var(--radius)}
 .pinned-section .note-item:first-child{margin-top:2px}
 .pinned-divider{height:1px;background:var(--border);margin:2px 8px 4px}
 .note-item:hover{background:var(--note-hover)}
