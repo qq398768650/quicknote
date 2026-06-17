@@ -656,17 +656,18 @@ async function uploadToRepo(file, noteId) {
   const ts = Date.now();
   const safeName = file.name.replace(/[^a-zA-Z0-9._\-一-龥]/g, "_");
   const path = ATTACH_PREFIX + "/" + noteId + "/" + ts + "_" + safeName;
+  const encodedContentPath = path.split("/").map(encodeURIComponent).join("/");
   const arrayBuffer = await file.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
   let binary = "";
   for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   const base64 = btoa(binary);
   const parts = repo.split("/");
-  await ghApi("/repos/" + parts[0] + "/" + parts[1] + "/contents/" + encodeURIComponent(path), "PUT", {
+  await ghApi("/repos/" + parts[0] + "/" + parts[1] + "/contents/" + encodedContentPath, "PUT", {
     message: "QuickNote attach: " + file.name,
     content: base64
   });
-  const url = "https://raw.githubusercontent.com/" + parts[0] + "/" + parts[1] + "/master/" + encodeURIComponent(path).replace(/%2F/g, "/");
+  const url = "https://raw.githubusercontent.com/" + parts[0] + "/" + parts[1] + "/master/" + encodedContentPath;
   return { id: genId(), name: file.name, path: path, size: file.size, type: file.type, url: url };
 }
 
@@ -674,10 +675,11 @@ async function deleteFromRepo(path) {
   const repo = getAttachRepo();
   if (!repo || !path) return;
   const parts = repo.split("/");
+  const encodedPath = path.split("/").map(encodeURIComponent).join("/");
   try {
-    const fileData = await ghApi("/repos/" + parts[0] + "/" + parts[1] + "/contents/" + encodeURIComponent(path));
+    const fileData = await ghApi("/repos/" + parts[0] + "/" + parts[1] + "/contents/" + encodedPath);
     if (fileData && fileData.sha) {
-      await ghApi("/repos/" + parts[0] + "/" + parts[1] + "/contents/" + encodeURIComponent(path), "DELETE", {
+      await ghApi("/repos/" + parts[0] + "/" + parts[1] + "/contents/" + encodedPath, "DELETE", {
         message: "QuickNote delete attach: " + path.split("/").pop(),
         sha: fileData.sha
       });
