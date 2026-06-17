@@ -12,6 +12,7 @@
 - 💾 自动保存（localStorage）
 - ⌨️ 快捷键支持
 - 📱 响应式设计，支持移动端
+- 📎 附件上传（图片 / 文档，存储到 GitHub Repo）
 
 ## Markdown 支持
 
@@ -43,6 +44,7 @@
 | `Ctrl + Shift + S` | 手动保存 |
 | `Ctrl + Shift + P` | 切换预览 |
 | `拖拽文件到页面` | 导入 TXT / DOCX / XLSX / CSV / MD |
+| `点击 📎 按钮` | 上传附件（图片 / 文档） |
 
 ## 技术栈
 
@@ -60,6 +62,13 @@
 ## 使用方法
 
 直接打开 `index.html` 即可使用，数据保存在浏览器本地。
+
+### 附件功能配置
+
+1. 点击 sidebar 底部的齿轮图标
+2. 输入附件存储 Repo（格式：`owner/repo`，如 `username/quicknote-files`）
+3. 确保 GitHub Token 具有 `repo` 权限（附件通过 GitHub Contents API 上传）
+4. 图片附件会自动插入 Markdown 引用，预览模式下直接显示
 
 ## 在线访问
 

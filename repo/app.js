@@ -3,6 +3,8 @@
 const LS_CACHE_KEY = "qn_cache";
 const LS_GIST_ID_KEY = "qn_gist_id";
 const LS_THEME_KEY = "qn_theme";
+const LS_ATTACH_REPO_KEY = "qn_attach_repo";
+const ATTACH_PREFIX = "quicknote-attachments";
 
 let token = null;
 let gistId = localStorage.getItem(LS_GIST_ID_KEY);
@@ -407,11 +409,11 @@ function openNote(id) {
   emptyState.style.display = "none"; editorView.style.display = "flex";
   noteTitle.value = n.title || ""; noteContent.value = n.content || "";
   previewMode = false; noteContent.style.display = "block"; previewContent.style.display = "none";
-  renderTagBar(); renderNoteList(); updateFooter(); updateMobileTitle(); if (isMobile()) hideSidebar();
+  renderTagBar(); renderAttachments(); renderNoteList(); updateFooter(); updateMobileTitle(); if (isMobile()) hideSidebar();
 }
 
 async function createNote() {
-  const n = { id: genId(), title: "", content: "", tags: [], createdAt: Date.now(), updatedAt: Date.now() };
+  const n = { id: genId(), title: "", content: "", tags: [], attachments: [], createdAt: Date.now(), updatedAt: Date.now() };
   notes.unshift(n); saveCache();
   if (isMobile()) hideSidebar();
   openNote(n.id); renderAll(); noteTitle.focus();
@@ -627,6 +629,190 @@ document.addEventListener("keydown", function(e) {
   if (e.ctrlKey && e.shiftKey && e.key === "P") { e.preventDefault(); previewBtn.click(); }
 });
 
+// ---- Attachments ----
+function getAttachRepo() { return localStorage.getItem(LS_ATTACH_REPO_KEY) || ""; }
+function setAttachRepo(v) { localStorage.setItem(LS_ATTACH_REPO_KEY, v); }
+
+function getAttachFileIcon(type) {
+  if (!type) return "&#x1F4CE;";
+  if (type.startsWith("image/")) return "&#x1F5BC;";
+  if (type.includes("pdf")) return "&#x1F4D5;";
+  if (type.includes("word") || type.includes("docx")) return "&#x1F4D6;";
+  if (type.includes("sheet") || type.includes("excel") || type.includes("xlsx")) return "&#x1F4CA;";
+  if (type.includes("presentation") || type.includes("ppt")) return "&#x1F4CA;";
+  if (type.startsWith("text/")) return "&#x1F4DD;";
+  return "&#x1F4CE;";
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / 1048576).toFixed(1) + " MB";
+}
+
+async function uploadToRepo(file, noteId) {
+  const repo = getAttachRepo();
+  if (!repo) throw new Error("未配置附件存储 Repo");
+  const ts = Date.now();
+  const safeName = file.name.replace(/[^a-zA-Z0-9._\-一-龥]/g, "_");
+  const path = ATTACH_PREFIX + "/" + noteId + "/" + ts + "_" + safeName;
+  const arrayBuffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
+  const parts = repo.split("/");
+  await ghApi("/repos/" + parts[0] + "/" + parts[1] + "/contents/" + encodeURIComponent(path), "PUT", {
+    message: "QuickNote attach: " + file.name,
+    content: base64
+  });
+  const url = "https://raw.githubusercontent.com/" + parts[0] + "/" + parts[1] + "/main/" + encodeURIComponent(path).replace(/%2F/g, "/");
+  return { id: genId(), name: file.name, path: path, size: file.size, type: file.type, url: url };
+}
+
+async function deleteFromRepo(path) {
+  const repo = getAttachRepo();
+  if (!repo || !path) return;
+  const parts = repo.split("/");
+  try {
+    const fileData = await ghApi("/repos/" + parts[0] + "/" + parts[1] + "/contents/" + encodeURIComponent(path));
+    if (fileData && fileData.sha) {
+      await ghApi("/repos/" + parts[0] + "/" + parts[1] + "/contents/" + encodeURIComponent(path), "DELETE", {
+        message: "QuickNote delete attach: " + path.split("/").pop(),
+        sha: fileData.sha
+      });
+    }
+  } catch(e) { console.error("Delete attach fail", e); }
+}
+
+function renderAttachments() {
+  const bar = document.getElementById("attachment-bar");
+  if (!bar) return;
+  const n = notes.find(function(x) { return x.id === activeId; });
+  if (!n) { bar.innerHTML = ""; return; }
+  const atts = n.attachments || [];
+  var html = "";
+  for (var i = 0; i < atts.length; i++) {
+    var a = atts[i];
+    var isImage = a.type && a.type.startsWith("image/");
+    var thumb = isImage ? '<img class="attachment-thumb" src="' + a.url + '" alt="' + escapeHtml(a.name) + '" data-img="' + a.url + '">' : '<span class="attachment-icon">' + getAttachFileIcon(a.type) + '</span>';
+    html += '<div class="attachment-item" data-aid="' + a.id + '">' + thumb + '<div class="attachment-info"><div class="attachment-name" title="' + escapeHtml(a.name) + '">' + escapeHtml(a.name) + '</div><div class="attachment-size">' + formatFileSize(a.size) + '</div></div><a href="' + a.url + '" download="' + escapeHtml(a.name) + '" title="下载" style="color:inherit;text-decoration:none">&#x2B07;</a><button class="attachment-del" data-del="' + a.id + '" title="删除">&times;</button></div>';
+  }
+  html += '<div class="attachment-upload-hint" id="attach-upload-hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 添加附件</div>';
+  bar.innerHTML = html;
+}
+
+async function handleAttachmentUpload(files) {
+  var repo = getAttachRepo();
+  if (!repo) {
+    document.getElementById("settings-modal").style.display = "flex";
+    document.getElementById("attach-repo-input").focus();
+    return;
+  }
+  var n = notes.find(function(x) { return x.id === activeId; });
+  if (!n) return;
+  if (!n.attachments) n.attachments = [];
+  var bar = document.getElementById("attachment-bar");
+  var progressEl = document.createElement("div");
+  progressEl.className = "attachment-progress";
+  bar.appendChild(progressEl);
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i];
+    if (file.size > 10 * 1024 * 1024) {
+      showStatus(file.name + " 超过 10MB 限制", true);
+      continue;
+    }
+    progressEl.textContent = "上传中 (" + (i + 1) + "/" + files.length + "): " + file.name;
+    try {
+      var att = await uploadToRepo(file, n.id);
+      n.attachments.push(att);
+      if (att.type && att.type.startsWith("image/")) {
+        var imgMd = "\n![" + att.name + "](" + att.url + ")";
+        n.content = (n.content || "") + imgMd;
+        noteContent.value = n.content;
+      }
+    } catch(e) {
+      showStatus("上传失败: " + e.message, true);
+    }
+  }
+  progressEl.remove();
+  n.updatedAt = Date.now();
+  saveCache();
+  renderAttachments();
+  await saveToGist();
+  showStatus("附件已上传");
+}
+
+async function deleteAttachment(aid) {
+  var n = notes.find(function(x) { return x.id === activeId; });
+  if (!n || !n.attachments) return;
+  var att = n.attachments.find(function(a) { return a.id === aid; });
+  if (!att) return;
+  if (!confirm("确认删除附件「" + att.name + "」？")) return;
+  n.attachments = n.attachments.filter(function(a) { return a.id !== aid; });
+  n.updatedAt = Date.now();
+  saveCache();
+  renderAttachments();
+  await deleteFromRepo(att.path);
+  await saveToGist();
+  showStatus("附件已删除");
+}
+
+// Settings modal
+document.getElementById("settings-btn").addEventListener("click", function() {
+  document.getElementById("attach-repo-input").value = getAttachRepo();
+  document.getElementById("settings-modal").style.display = "flex";
+});
+document.getElementById("settings-cancel").addEventListener("click", function() {
+  document.getElementById("settings-modal").style.display = "none";
+});
+document.getElementById("settings-save").addEventListener("click", function() {
+  var val = document.getElementById("attach-repo-input").value.trim();
+  if (val && !/^[a-zA-Z0-9\-_.]+\/[a-zA-Z0-9\-_.]+$/.test(val)) {
+    showStatus("格式错误，请输入 owner/repo", true);
+    return;
+  }
+  setAttachRepo(val);
+  document.getElementById("settings-modal").style.display = "none";
+  showStatus("附件 Repo 已保存");
+});
+document.getElementById("settings-modal").addEventListener("click", function(e) {
+  if (e.target === this) this.style.display = "none";
+});
+
+// Attach button & file input
+document.getElementById("attach-btn").addEventListener("click", function() {
+  document.getElementById("file-input").click();
+});
+document.getElementById("file-input").addEventListener("change", function(e) {
+  if (e.target.files && e.target.files.length > 0) {
+    handleAttachmentUpload(Array.from(e.target.files));
+    e.target.value = "";
+  }
+});
+
+// Attachment bar events (delete & image preview)
+document.getElementById("attachment-bar").addEventListener("click", function(e) {
+  var del = e.target.closest(".attachment-del");
+  if (del) { deleteAttachment(del.dataset.del); return; }
+  var img = e.target.closest(".attachment-thumb");
+  if (img) {
+    document.getElementById("image-preview-img").src = img.dataset.img;
+    document.getElementById("image-preview-modal").style.display = "flex";
+    return;
+  }
+  var hint = e.target.closest("#attach-upload-hint");
+  if (hint) document.getElementById("file-input").click();
+});
+
+// Image preview close
+document.getElementById("image-preview-close").addEventListener("click", function() {
+  document.getElementById("image-preview-modal").style.display = "none";
+});
+document.getElementById("image-preview-modal").addEventListener("click", function(e) {
+  if (e.target === this) this.style.display = "none";
+});
+
 // --- Drag-and-drop file import ---
 (function() {
   var overlay = null;
@@ -736,7 +922,7 @@ document.addEventListener("keydown", function(e) {
   }
 
   async function createNoteFromFile(title, content, ext) {
-    var n = { id: genId(), title: title, content: content, tags: [], createdAt: Date.now(), updatedAt: Date.now() };
+    var n = { id: genId(), title: title, content: content, tags: [], attachments: [], createdAt: Date.now(), updatedAt: Date.now() };
     notes.unshift(n);
     saveCache();
     openNote(n.id);
