@@ -353,18 +353,34 @@ function getFiltered() {
   return f.sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0));
 }
 
+function isPinned(n) { return notes.length > 0 && notes[0].id === n.id; }
+
 function renderNoteList() {
   const f = getFiltered();
   noteCount.textContent = notes.length + " 则笔记";
   if (f.length === 0) { noteList.innerHTML = "<div style=\"padding:24px;text-align:center;color:var(--text-secondary);font-size:13px;\">暂无笔记</div>"; return; }
-  noteList.innerHTML = f.map(function(n) {
+  var pinned = f.filter(function(n) { return isPinned(n); });
+  var unpinned = f.filter(function(n) { return !isPinned(n); });
+  function renderItem(n) {
+    var pinnedFlag = isPinned(n);
     var p = (n.content||"").replace(/[#*`>\[\]()!~\-]/g, "").slice(0, 80);
     var d = new Date(n.updatedAt||n.createdAt);
     var ds = (d.getMonth()+1) + "/" + d.getDate() + " " + d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
     var th = (n.tags||[]).map(function(t) { return "<span>" + t + "</span>"; }).join("");
     var cls = n.id === activeId ? " active" : "";
-    return "<div class=\"note-item" + cls + "\" data-id=\"" + n.id + "\" draggable=\"true\"><button class=\"pin-btn\" data-pin=\"" + n.id + "\" title=\"置顶\">&#x1F4CC;</button><div class=\"note-item-title\">" + escapeHtml(n.title||"无标题") + "</div><div class=\"note-item-preview\">" + (p||"空白") + "</div><div class=\"note-item-meta\"><span>" + ds + "</span><div class=\"note-item-tags\">" + th + "</div></div></div>";
-  }).join("");
+    var pinIcon = pinnedFlag ? "&#x1F4CD;" : "&#x1F4CC;";
+    var pinTitle = pinnedFlag ? "取消置顶" : "置顶";
+    return "<div class=\"note-item" + cls + "\" data-id=\"" + n.id + "\" draggable=\"" + (!pinnedFlag) + "\"><button class=\"pin-btn\" data-pin=\"" + n.id + "\" title=\"" + pinTitle + "\">" + pinIcon + "</button><div class=\"note-item-title\">" + escapeHtml(n.title||"无标题") + "</div><div class=\"note-item-preview\">" + (p||"空白") + "</div><div class=\"note-item-meta\"><span>" + ds + "</span><div class=\"note-item-tags\">" + th + "</div></div></div>";
+  }
+  var html = "";
+  if (pinned.length > 0) {
+    html += '<div class="pinned-section">' + pinned.map(renderItem).join("") + '</div>';
+    if (unpinned.length > 0) html += '<div class="pinned-divider"></div>';
+  }
+  if (unpinned.length > 0) {
+    html += unpinned.map(renderItem).join("");
+  }
+  noteList.innerHTML = html;
 }
 
 function renderTagFilter() {

@@ -175,6 +175,11 @@ body{
 .pin-btn:hover{opacity:1!important;color:var(--accent)}
 
 .drop-indicator{height:2px;background:var(--accent);border-radius:1px;margin:0 8px;pointer-events:none;display:none}
+
+/* ===== Pinned section ===== */
+.pinned-section{position:sticky;top:0;background:var(--sidebar-bg);z-index:2}
+.pinned-section .note-item:first-child{margin-top:2px}
+.pinned-divider{height:1px;background:var(--border);margin:2px 8px 4px}
 .note-item:hover{background:var(--note-hover)}
 .note-item.active{background:var(--note-active)}
 .note-item-title{font-size:14px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
