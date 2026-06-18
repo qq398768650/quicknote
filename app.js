@@ -467,22 +467,25 @@ document.getElementById("new-note-btn").addEventListener("click", createNote);
 deleteBtn.addEventListener("click", deleteNote);
 
 noteList.addEventListener("click", function(e) {
-  var pin = e.target.closest(".pin-btn");
-  if (pin) {
-    e.stopPropagation();
-    var id = pin.dataset.pin;
-    var note = notes.find(function(x) { return x.id === id; });
-    if (note) {
-      note.pinned = !note.pinned;
-      note.updatedAt = Date.now();
-      saveCache();
-      renderAll();
-      saveToGist();
-    }
-    return;
-  }
   var item = e.target.closest(".note-item");
-  if (item) openNote(item.dataset.id);
+  if (!item) return;
+  var pinBtn = item.querySelector(".pin-btn");
+  if (pinBtn) {
+    var r = pinBtn.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+      var id = pinBtn.dataset.pin;
+      var note = notes.find(function(x) { return x.id === id; });
+      if (note) {
+        note.pinned = !note.pinned;
+        note.updatedAt = Date.now();
+        saveCache();
+        renderAll();
+        saveToGist();
+      }
+      return;
+    }
+  }
+  openNote(item.dataset.id);
 });
 
 // Drag-and-drop note reordering
