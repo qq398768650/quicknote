@@ -96,8 +96,10 @@ async function initNotes() {
   saveCache();
   renderAll();
   initMobileLayout();
-  const sorted = [...notes].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-  if (sorted.length > 0) openNote(sorted[0].id);
+  if (notes.length > 0) {
+    var newest = notes.reduce(function(a, b) { return (b.updatedAt || 0) > (a.updatedAt || 0) ? b : a; });
+    openNote(newest.id);
+  }
 }
 
 function showStatus(msg, err) {
@@ -350,7 +352,7 @@ function getFiltered() {
   let f = notes;
   if (activeTag) f = f.filter(n => (n.tags||[]).includes(activeTag));
   if (searchQuery) { const q = searchQuery.toLowerCase(); f = f.filter(n => (n.title||"").toLowerCase().includes(q) || (n.content||"").toLowerCase().includes(q) || (n.tags||[]).some(t => t.toLowerCase().includes(q))); }
-  return f.sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0));
+  return f;
 }
 
 function isPinned(n) { return n.pinned === true; }
